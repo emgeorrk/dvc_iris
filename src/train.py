@@ -17,10 +17,10 @@ def train_model():
     X = train_df.drop('target', axis=1)
     y = train_df['target']
 
-    # Train model with parameters from params.yaml
+    # Modify the model to make it less accurate
     model = RandomForestClassifier(
-        n_estimators=params['train']['n_estimators'],
-        max_depth=params['train']['max_depth'],
+        n_estimators=5,  # Reduced number of trees to make model less powerful
+        max_depth=2,     # Limit the depth of the trees to make them less complex
         random_state=42
     )
     model.fit(X, y)
