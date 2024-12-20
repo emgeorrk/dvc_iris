@@ -5,10 +5,11 @@ import yaml
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import confusion_matrix
+from sklearn.metrics import confusion_matrix, classification_report, accuracy_score, precision_recall_fscore_support
+
 
 def train_model():
-    # Load parameters from params.yaml
+    # Load parameters
     with open('params.yaml') as f:
         params = yaml.safe_load(f)
 
@@ -17,7 +18,7 @@ def train_model():
     X = train_df.drop('target', axis=1)
     y = train_df['target']
 
-    # Train model with parameters from params.yaml
+    # Train model
     model = RandomForestClassifier(
         n_estimators=params['train']['n_estimators'],
         max_depth=params['train']['max_depth'],
@@ -29,21 +30,44 @@ def train_model():
     with open('models/model.pkl', 'wb') as f:
         pickle.dump(model, f)
 
-    # Calculate and save metrics
+    # Calculate metrics
     train_pred = model.predict(X)
-    train_score = model.score(X, y)
+    accuracy = accuracy_score(y, train_pred)
+    precision, recall, f1, support = precision_recall_fscore_support(y, train_pred, average='weighted')
+
+    # Get per-class metrics
+    class_report = classification_report(y, train_pred, output_dict=True)
+
     metrics = {
-        'train_accuracy': train_score
+        'train_accuracy': accuracy,
+        'train_precision': precision,
+        'train_recall': recall,
+        'train_f1': f1,
+        'per_class_metrics': {
+            f'class_{i}': {
+                'precision': class_report[str(i)]['precision'],
+                'recall': class_report[str(i)]['recall'],
+                'f1-score': class_report[str(i)]['f1-score'],
+                'support': class_report[str(i)]['support']
+            } for i in range(3)
+        },
+        'model_params': {
+            'n_estimators': params['train']['n_estimators'],
+            'max_depth': params['train']['max_depth']
+        }
     }
+
     with open('metrics/train_metrics.json', 'w') as f:
-        json.dump(metrics, f)
+        json.dump(metrics, f, indent=4)
 
     # Generate plots
     # Confusion Matrix
     cm = confusion_matrix(y, train_pred)
     plt.figure(figsize=(8, 6))
-    sns.heatmap(cm, annot=True, fmt='d')
-    plt.title('Confusion Matrix')
+    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues')
+    plt.title('Confusion Matrix (Training)')
+    plt.ylabel('True Label')
+    plt.xlabel('Predicted Label')
     plt.savefig('plots/confusion_matrix.png')
     plt.close()
 
@@ -57,6 +81,7 @@ def train_model():
     plt.title('Feature Importance')
     plt.savefig('plots/feature_importance.png')
     plt.close()
+
 
 if __name__ == '__main__':
     train_model()
