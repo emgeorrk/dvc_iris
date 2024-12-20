@@ -1,0 +1,39 @@
+# dvc.yaml
+stages:
+  prepare:
+    cmd: python src/prepare.py
+    deps:
+    - data/raw/iris.csv
+    - src/prepare.py
+    outs:
+    - data/prepared/train.csv
+    - data/prepared/test.csv
+
+  train:
+    cmd: python src/train.py
+    deps:
+    - data/prepared/train.csv
+    - src/train.py
+    params:
+    - train.n_estimators
+    - train.max_depth
+    outs:
+    - models/model.pkl
+    metrics:
+    - metrics/train_metrics.json:
+        cache: false
+    plots:
+    - plots/confusion_matrix.png
+    - plots/feature_importance.png
+
+  evaluate:
+    cmd: python src/evaluate.py
+    deps:
+    - data/prepared/test.csv
+    - models/model.pkl
+    - src/evaluate.py
+    metrics:
+    - metrics/test_metrics.json:
+        cache: false
+    plots:
+    - plots/roc_curve.png
